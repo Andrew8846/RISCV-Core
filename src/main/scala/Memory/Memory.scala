@@ -1,0 +1,5 @@
+package Memory
+
+class Memory {
+
+}
