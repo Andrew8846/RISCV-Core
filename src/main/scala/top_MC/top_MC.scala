@@ -153,6 +153,7 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   MEM.io.writeEnable          := EXBarrier.outControlSignals.memWrite
   MEM.io.readEnable           := EXBarrier.outControlSignals.memRead
 
+
   //MEMBarrier
   MEMBarrier.inControlSignals := EXBarrier.outControlSignals
   MEMBarrier.inALUResult      := EXBarrier.outALUResult

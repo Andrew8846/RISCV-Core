@@ -17,10 +17,14 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
     val busy = Output(Bool())
 
     val mem_write_en = Output(Bool())
-    val mem_read_en = Output(Bool())
+    val mem_read_en_inst = Output(Bool())
+    val mem_read_en_data = Output(Bool())
     val mem_data_in = Output(UInt(32.W))
     val mem_data_addr = Output(UInt(32.W))
     val mem_data_out = Input(UInt(32.W))
+    val dataWriteAck = Input(Bool())
+    val dataReadAck = Input(Bool())
+    val instReadAck = Input(Bool())
   })
 
   val scalaReadOnlyBool = if(read_only) true.B else false.B
@@ -45,7 +49,8 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
   io.busy := (stateReg =/= idle)
 
   io.mem_write_en := 0.B
-  io.mem_read_en := 0.B
+  io.mem_read_en_data := 0.B
+  io.mem_read_en_inst := 0.B
   io.mem_data_in := 0.U
   io.mem_data_addr := 0.U
 
@@ -102,7 +107,8 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
 
     is(writeback) {
       io.mem_write_en := true.B
-      io.mem_read_en := false.B
+      io.mem_read_en_inst := false.B
+      io.mem_read_en_data := false.B
       val temp = Wire(Vec(32, Bool()))
       temp := 0.U(32.W).asBools // the address where the dirty cache element should be stored in memory
       temp(1) := false.B
@@ -111,27 +117,88 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
       for (i <- 8 until 32) { temp(i) := data_element(i + 24) } // the rest 24 bits from the tag
       io.mem_data_addr := temp.asUInt
       io.mem_data_in := data_element(31, 0) // write the data in the dirty element to the memory
-      stateReg := allocate
+
+      when (io.dataWriteAck) { // trying to write data until it gets ack message
+        stateReg := allocate
+        io.mem_write_en := false.B
+      }.otherwise {
+        stateReg := writeback
+      }
     }
 
-    is(allocate) {
-      when(statecount) {
-        statecount := false.B
-        io.mem_read_en := false.B
-        val temp = Wire(Vec(58, Bool()))
-        temp := 0.U(58.W).asBools
-        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
-        temp(56) := false.B
-        temp(57) := true.B
-        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
-        cache_data_array(index) := temp.asUInt
-        stateReg := compare
-      }.otherwise {
-        statecount := true.B
-        io.mem_read_en := true.B
-        io.mem_write_en := false.B
-        io.mem_data_addr := data_addr_reg
+    is(allocate) { // todo question: will i stay in same if statement whenever instruction cache is using this module? or can it be overwritten by second cache on second iteration of allocate state
+      // here i can be reading from memory but for two purposes: instuction read or data read. i need to differentiate somehow
+      io.mem_write_en := false.B
+      io.mem_data_addr := data_addr_reg
+      if(read_only) {
+        io.mem_read_en_inst := true.B
+
+        when(io.instReadAck) { // if i get ack from memory that i can read instruction, i start reading
+          io.mem_read_en_inst := false.B
+          val temp = Wire(Vec(58, Bool()))
+          temp := 0.U(58.W).asBools
+          for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+          temp(56) := false.B
+          temp(57) := true.B
+          for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+          cache_data_array(index) := temp.asUInt
+          stateReg := compare
+        }.otherwise { // if i dont get read ack i stay in allocate state
+          stateReg := allocate
+        }
       }
+      else {
+        io.mem_read_en_data := true.B
+        when(io.dataReadAck) { // if i get ack from memory that i can read data, i start reading
+          io.mem_read_en_data := false.B
+          val temp = Wire(Vec(58, Bool()))
+          temp := 0.U(58.W).asBools
+          for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+          temp(56) := false.B
+          temp(57) := true.B
+          for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+          cache_data_array(index) := temp.asUInt
+          stateReg := compare
+        }.otherwise { // if i dont get read ack i stay in allocate state
+          stateReg := allocate
+        }
+
+      }
+//      io.mem_read_en := true.B
+//      io.mem_write_en := false.B
+//      io.mem_data_addr := data_addr_reg
+
+//      when(io.dataReadAck || io.instReadAck) { // if i get ack from memory that i can read, i start reading
+//        io.mem_read_en := false.B
+//        val temp = Wire(Vec(58, Bool()))
+//        temp := 0.U(58.W).asBools
+//        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+//        temp(56) := false.B
+//        temp(57) := true.B
+//        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+//        cache_data_array(index) := temp.asUInt
+//        stateReg := compare
+//      }.otherwise { // if i dont get read ack i stay in allocate state
+//        stateReg := allocate
+//      }
+//
+//      when(statecount) {
+//        statecount := false.B
+//        io.mem_read_en := false.B
+//        val temp = Wire(Vec(58, Bool()))
+//        temp := 0.U(58.W).asBools
+//        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+//        temp(56) := false.B
+//        temp(57) := true.B
+//        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+//        cache_data_array(index) := temp.asUInt
+//        stateReg := compare
+//      }.otherwise {
+//        statecount := true.B
+//        io.mem_read_en := true.B
+//        io.mem_write_en := false.B
+//        io.mem_data_addr := data_addr_reg
+//      }
     }
   }
 }

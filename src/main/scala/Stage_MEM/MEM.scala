@@ -13,6 +13,7 @@ package Stage_MEM
 
 import DCache.CacheAndMemory
 import DataMemory.DataMemory
+import Memory.CachesAndMemory
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{ChiselAnnotation, annotate}
@@ -41,7 +42,7 @@ class MEM(DataFile: String) extends Module {
 
 
   //val DMEM = Module(new DataMemory())
-  val DMEM = Module(new CacheAndMemory())
+  val DMEM = Module(new CachesAndMemory(DataFile))
 
   //DMEM.testHarness.setup  := testHarness.DMEMsetup
   testHarness.DMEMpeek    := DMEM.io.data_out
@@ -51,10 +52,10 @@ class MEM(DataFile: String) extends Module {
   DMEM.io.write_data  := io.dataIn
   DMEM.io.address     := io.dataAddress
   DMEM.io.write_en    := io.writeEnable
-  DMEM.io.read_en     := io.readEnable
+  DMEM.io.read_en_data:= io.readEnable
   //Read data from DMEM
   io.dataOut          := DMEM.io.data_out
-  io.dataValid        := DMEM.io.valid
-  io.memBusy          := DMEM.io.busy
+  io.dataValid        := DMEM.io.d_valid
+  io.memBusy          := DMEM.io.d_busy
 
 }

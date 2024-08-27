@@ -12,6 +12,7 @@ Student Workers: Giorgi Solomnishvili, Zahra Jenab Mahabadi, Tsotne Karchava, Ab
 package DCache
 
 import DataMemory.DataMemory
+import Memory.Memory
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
@@ -29,29 +30,55 @@ class CacheAndMemory extends Module{
       val valid = Output(Bool())
       val data_out = Output(UInt(32.W))
       val busy = Output(Bool())
+
     }
   )
 
-  val data_mem  = Module(new DataMemory)
+  val mem  = Module(new Memory(""))
   val dcache = Module(new Cache("src/main/scala/DCache/CacheContent.bin", read_only = false))
+  val icache = Module(new Cache("src/main/scala/ICache/ICacheContent.bin", read_only = true))
 
-  data_mem.testHarness.setup.setup := 0.B
-  data_mem.testHarness.setup.dataIn := 0.U
-  data_mem.testHarness.setup.dataAddress := 0.U
-  data_mem.testHarness.setup.readEnable := 0.B
-  data_mem.testHarness.setup.writeEnable := 0.B
+//    data_mem.testHarness.setup.setup := 0.B
+//    data_mem.testHarness.setup.dataIn := 0.U
+//    data_mem.testHarness.setup.dataAddress := 0.U
+//    data_mem.testHarness.setup.readEnable := 0.B
+//    data_mem.testHarness.setup.writeEnable := 0.B
+//
+//    dcache.io.data_in.foreach(_ := io.write_data)
+//    dcache.io.data_addr := io.address
+//    dcache.io.write_en.foreach(_ := io.write_en)
+//    dcache.io.read_en := io.read_en
+//    io.valid := dcache.io.valid
+//    io.data_out := dcache.io.data_out
+//    io.busy := dcache.io.busy
+//
+//    data_mem.io.writeEnable := dcache.io.mem_write_en
+//    data_mem.io.readEnable := dcache.io.mem_read_en
+//    data_mem.io.dataIn := dcache.io.mem_data_in
+//    data_mem.io.dataAddress := dcache.io.mem_data_addr / 4.U
+//    dcache.io.mem_data_out := data_mem.io.dataOut
 
-  dcache.io.data_in.foreach(_ := io.write_data)
-  dcache.io.data_addr := io.address
-  dcache.io.write_en.foreach(_ := io.write_en)
-  dcache.io.read_en := io.read_en
-  io.valid := dcache.io.valid
-  io.data_out := dcache.io.data_out
-  io.busy := dcache.io.busy
+  // for unified memory
 
-  data_mem.io.writeEnable := dcache.io.mem_write_en
-  data_mem.io.readEnable := dcache.io.mem_read_en
-  data_mem.io.dataIn := dcache.io.mem_data_in
-  data_mem.io.dataAddress := dcache.io.mem_data_addr / 4.U
-  dcache.io.mem_data_out := data_mem.io.dataOut
+      dcache.io.data_in.foreach(_ := io.write_data)
+      dcache.io.data_addr := io.address
+      dcache.io.write_en.foreach(_ := io.write_en)
+      dcache.io.read_en := io.read_en
+      io.valid := dcache.io.valid
+      io.data_out := dcache.io.data_out
+      io.busy := dcache.io.busy
+
+    mem.io.instructionAddress := 0.U
+    mem.io.instrReadEnable := false.B
+
+    mem.io.dataAddress := dcache.io.mem_data_addr / 4.U
+    mem.io.dataIn := dcache.io.mem_data_in
+    mem.io.dataReadEnable := dcache.io.mem_read_en_data
+    mem.io.dataWriteEnable := dcache.io.mem_write_en
+
+    dcache.io.instReadAck := mem.io.icacheReadAck
+    dcache.io.dataReadAck := mem.io.dcacheReadAck
+    dcache.io.dataWriteAck := mem.io.dcacheWriteAck
+    dcache.io.mem_data_out := mem.io.dataOut
+
 }

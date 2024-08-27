@@ -17,6 +17,7 @@ import chisel3.util._
 import config.{ControlSignals, IMEMsetupSignals, Inst, Instruction}
 import config.Inst._
 import InstructionMemory.InstructionMemory
+import Memory.CachesAndMemory
 
 class IF(BinaryFile: String) extends Module
 {
@@ -49,7 +50,7 @@ class IF(BinaryFile: String) extends Module
   })
 
   // TODO change name for "InstructionMemory"
-  val InstructionMemory = Module(new ICacheAndIMemory(BinaryFile)) // it should be changed with ICacheAndMemory class
+  val InstructionMemory = Module(new CachesAndMemory(BinaryFile))
   val BTB               = Module(new BTB_direct)
   val nextPC            = WireInit(UInt(), 0.U)
   val PC                = RegInit(UInt(32.W), 0.U)
@@ -62,7 +63,7 @@ class IF(BinaryFile: String) extends Module
   testHarness.PC := InstructionMemory.testHarness.requestedAddress
 
   instruction := InstructionMemory.io.instr_out.asTypeOf(new Instruction)
-  io.fetchBusy := InstructionMemory.io.busy //InstructionMemory.io.busy
+  io.fetchBusy := InstructionMemory.io.i_busy //InstructionMemory.io.busy
 //  instruction := InstructionMemory.io.instruction.asTypeOf(new Instruction)
 
   // Adder to increment PC
@@ -100,7 +101,7 @@ class IF(BinaryFile: String) extends Module
       nextPC := PCplus4
     }
   // Stall PC
-  when(io.stall){ // TODO here maybe stall all input signals
+  when(io.stall){
     when(io.branchMispredicted) {
       PC := nextPC
     }.otherwise{
@@ -114,7 +115,7 @@ class IF(BinaryFile: String) extends Module
   }.otherwise{
     //Fetch instruction
 //    InstructionMemory.io.instructionAddress := PC
-    InstructionMemory.io.instr_addr := PC
+    InstructionMemory.io.instr_addr := PC // todo i only give this one input to my cachesAndMemory class. should i give some zero values for other inputs
     // PC register gets nextPC
     PC := nextPC
   }

@@ -48,7 +48,7 @@ class DCache(CacheFile: String) extends Module {
 
   // Memory interface connections
   io.mem_write_en := cache.io.mem_write_en
-  io.mem_read_en := cache.io.mem_read_en
+  io.mem_read_en := cache.io.mem_read_en_data
   io.mem_data_in := cache.io.mem_data_in
   io.mem_data_addr := cache.io.mem_data_addr
   cache.io.mem_data_out := io.mem_data_out

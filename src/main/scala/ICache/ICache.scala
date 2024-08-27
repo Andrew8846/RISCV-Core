@@ -30,7 +30,7 @@ class ICache(CacheFile: String) extends Module {
   io.busy := cache.io.busy
 
   // Memory interface connections
-  io.mem_read_en := cache.io.mem_read_en
+  io.mem_read_en := cache.io.mem_read_en_inst
   io.mem_addr := cache.io.mem_data_addr
   cache.io.mem_data_out := io.mem_data_in
 }
