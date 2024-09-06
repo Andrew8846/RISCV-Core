@@ -34,6 +34,7 @@ class IF(BinaryFile: String) extends Module
     val branchAddr         = Input(UInt())
     val IFBarrierPC        = Input(UInt())
     val stall              = Input(Bool())
+    val instruction_in     = Input(new Instruction)
     // Inputs for BTB, will come from EX stage and Hazard Unit
     val updatePrediction   = Input(Bool())
     val newBranch          = Input(Bool())
@@ -46,11 +47,12 @@ class IF(BinaryFile: String) extends Module
     val btbTargetPredict   = Output(UInt(32.W))
     val PC                 = Output(UInt())
     val instruction        = Output(new Instruction)
-    val fetchBusy          = Output(Bool()) // added this signal for stall
+//    val fetchBusy          = Output(Bool()) // added this signal for stall
+    val instr_addr_out     = Output(UInt(32.W))
   })
 
   // TODO change name for "InstructionMemory"
-  val InstructionMemory = Module(new CachesAndMemory(BinaryFile))
+//  val InstructionMemory = Module(new CachesAndMemory(BinaryFile))
   val BTB               = Module(new BTB_direct)
   val nextPC            = WireInit(UInt(), 0.U)
   val PC                = RegInit(UInt(32.W), 0.U)
@@ -59,11 +61,12 @@ class IF(BinaryFile: String) extends Module
   val branch            = WireInit(Bool(), false.B)
 
   // i commented those two lines and I question even if they are necessary TODO
-  InstructionMemory.testHarness.setupSignals := testHarness.InstructionMemorySetup
-  testHarness.PC := InstructionMemory.testHarness.requestedAddress
+//  InstructionMemory.testHarness.setupSignals := testHarness.InstructionMemorySetup
+  testHarness.PC := 0.U
 
-  instruction := InstructionMemory.io.instr_out.asTypeOf(new Instruction)
-  io.fetchBusy := InstructionMemory.io.i_busy //InstructionMemory.io.busy
+  instruction := io.instruction_in
+//  instruction := InstructionMemory.io.instr_out.asTypeOf(new Instruction)
+//  io.fetchBusy := InstructionMemory.io.i_busy //InstructionMemory.io.busy
 //  instruction := InstructionMemory.io.instruction.asTypeOf(new Instruction)
 
   // Adder to increment PC
@@ -110,12 +113,14 @@ class IF(BinaryFile: String) extends Module
 
     //Fetch prev instruction -- Stalling the part of IF Barrier that holds the instruction
     //InstructionMemory.io.instructionAddress := io.IFBarrierPC
-    InstructionMemory.io.instr_addr := io.IFBarrierPC
+//    InstructionMemory.io.instr_addr := io.IFBarrierPC
+    io.instr_addr_out := io.IFBarrierPC
 
   }.otherwise{
     //Fetch instruction
 //    InstructionMemory.io.instructionAddress := PC
-    InstructionMemory.io.instr_addr := PC // todo i only give this one input to my cachesAndMemory class. should i give some zero values for other inputs
+//    InstructionMemory.io.instr_addr := PC // todo i only give this one input to my cachesAndMemory class. should i give some zero values for other inputs
+    io.instr_addr_out := PC
     // PC register gets nextPC
     PC := nextPC
   }

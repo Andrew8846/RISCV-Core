@@ -2,16 +2,8 @@ package Memory
 
 import DCache.Cache
 import chisel3._
-import config.IMEMsetupSignals
 
 class CachesAndMemory(I_memoryFile: String) extends Module{
-  val testHarness = IO(
-    new Bundle {
-      val setupSignals     = Input(new IMEMsetupSignals)
-      val requestedAddress = Output(UInt())
-    }
-  )
-  testHarness.requestedAddress := 0.U
   val io = IO(
     new Bundle{
       val write_data = Input(UInt(32.W))

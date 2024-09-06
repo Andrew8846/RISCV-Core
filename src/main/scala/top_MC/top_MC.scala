@@ -19,7 +19,8 @@ import Stage_IF.IF
 import Stage_EX.EX
 import Stage_MEM.MEM
 import HazardUnit.HazardUnit
-import config.{MemUpdates, RegisterUpdates, SetupSignals, TestReadouts}
+import Memory.CachesAndMemory
+import config.{MemUpdates, RegisterUpdates, SetupSignals, TestReadouts, Instruction}
 
 class top_MC(BinaryFile: String, DataFile: String) extends Module {
 
@@ -49,6 +50,9 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   // Hazard Unit
   val HzdUnit = Module(new HazardUnit)
 
+ // Memory
+ val CachesAndMemory = Module(new CachesAndMemory(BinaryFile))
+
 
   IF.testHarness.InstructionMemorySetup := testHarness.setupSignals.IMEMsignals
   ID.testHarness.registerSetup          := testHarness.setupSignals.registerSignals
@@ -64,6 +68,9 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
 
 
   // Fetch Stage
+  CachesAndMemory.io.instr_addr := IF.io.instr_addr_out
+  CachesAndMemory.io.read_en_instr := true.B
+  IF.io.instruction_in     := CachesAndMemory.io.instr_out.asTypeOf(new Instruction)
   IF.io.branchTaken        := EX.io.branchTaken
   IF.io.IFBarrierPC        := IFBarrier.outCurrentPC
   IF.io.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy     // Stall Fetch -> PC_en=0
@@ -138,7 +145,7 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   HzdUnit.io.wrongAddrPred      := EX.io.wrongAddrPred
   HzdUnit.io.btbPrediction      := IDBarrier.outBTBPrediction
   HzdUnit.io.branchType         := IDBarrier.outBranchType
-  HzdUnit.io.membusy            := MEM.io.memBusy || IF.io.fetchBusy // TODO changed memBusy signal
+  HzdUnit.io.membusy            := CachesAndMemory.io.d_busy || CachesAndMemory.io.i_busy // TODO changed memBusy signal
 
   //Signals to EXBarrier
   EXBarrier.inALUResult       := EX.io.ALUResult
@@ -152,13 +159,19 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   MEM.io.dataAddress          := EXBarrier.outALUResult
   MEM.io.writeEnable          := EXBarrier.outControlSignals.memWrite
   MEM.io.readEnable           := EXBarrier.outControlSignals.memRead
+  CachesAndMemory.io.write_data := MEM.io.dataIn_o
+  CachesAndMemory.io.address  := MEM.io.dataAddress_o
+  CachesAndMemory.io.write_en := MEM.io.writeEnable_o
+  CachesAndMemory.io.read_en_data := MEM.io.readEnable_o
+
+ // todo how MEM stage stalling keeps old values not overwritten
 
 
   //MEMBarrier
   MEMBarrier.inControlSignals := EXBarrier.outControlSignals
   MEMBarrier.inALUResult      := EXBarrier.outALUResult
   MEMBarrier.inRd             := EXBarrier.outRd
-  MEMBarrier.inMEMData        := MEM.io.dataOut
+  MEMBarrier.inMEMData        := CachesAndMemory.io.data_out
   MEMBarrier.stall            := HzdUnit.io.stall_membusy
 
   // MEM stage

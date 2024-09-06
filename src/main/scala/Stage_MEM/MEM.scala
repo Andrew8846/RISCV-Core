@@ -35,27 +35,36 @@ class MEM(DataFile: String) extends Module {
       val dataAddress = Input(UInt(32.W))
       val writeEnable = Input(Bool())
       val readEnable  = Input(Bool())
-      val dataOut     = Output(UInt())
-      val dataValid   = Output(Bool())
-      val memBusy     = Output(Bool())
+      val dataIn_o      = Output(UInt())
+      val dataAddress_o = Output(UInt(32.W))
+      val writeEnable_o = Output(Bool())
+      val readEnable_o  = Output(Bool())
+//      val dataOut     = Output(UInt())
+//      val dataValid   = Output(Bool())
+//      val memBusy     = Output(Bool())
     })
+
+  io.dataIn_o := io.dataIn
+  io.dataAddress_o := io.dataAddress
+  io.writeEnable_o := io.writeEnable
+  io.readEnable_o := io.readEnable
 
 
   //val DMEM = Module(new DataMemory())
-  val DMEM = Module(new CachesAndMemory(DataFile))
+//  val DMEM = Module(new CachesAndMemory(DataFile))
 
   //DMEM.testHarness.setup  := testHarness.DMEMsetup
-  testHarness.DMEMpeek    := DMEM.io.data_out
+  testHarness.DMEMpeek    := 0.U
   testHarness.testUpdates := 0.U.asTypeOf(new MemUpdates) //DMEM.testHarness.testUpdates
 
   //DMEM
-  DMEM.io.write_data  := io.dataIn
-  DMEM.io.address     := io.dataAddress
-  DMEM.io.write_en    := io.writeEnable
-  DMEM.io.read_en_data:= io.readEnable
+//  DMEM.io.write_data  := io.dataIn
+//  DMEM.io.address     := io.dataAddress
+//  DMEM.io.write_en    := io.writeEnable
+//  DMEM.io.read_en_data:= io.readEnable
   //Read data from DMEM
-  io.dataOut          := DMEM.io.data_out
-  io.dataValid        := DMEM.io.d_valid
-  io.memBusy          := DMEM.io.d_busy
+//  io.dataOut          := DMEM.io.data_out
+//  io.dataValid        := DMEM.io.d_valid
+//  io.memBusy          := DMEM.io.d_busy
 
 }
