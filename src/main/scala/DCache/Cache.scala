@@ -46,7 +46,7 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
 
   io.data_out := 0.U
   io.valid := 0.B
-  io.busy := (stateReg =/= idle)
+  io.busy := (stateReg =/= idle) // busy when in allocate or writeback but not in compare
 
   io.mem_write_en := 0.B
   io.mem_read_en_data := 0.B
@@ -55,8 +55,9 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
   io.mem_data_addr := 0.U
 
   switch(stateReg) {
-    is(idle) {
-      io.data_out := data_element(31, 0)
+    is(idle) { // todo move idle to compare
+      io.data_out := data_element(31, 0) // iff address is dividabable by 4 (last 2 bits) -> divide by 4 and take that address
+      // otherwise if instruction - exception,
       when(io.read_en || io.write_en.getOrElse(false.B)) {
         stateReg := compare
         write_en_reg := io.write_en.getOrElse(false.B)
@@ -68,6 +69,8 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
     }
 
     is(compare) {
+      io.mem_read_en_inst := false.B // i jump form allocate to compare and dissable memory reads here, hence breaking combinational loop
+      io.mem_read_en_data := false.B
       index := (data_addr_reg / 4.U) % cacheLines
       data_element_wire := cache_data_array((data_addr_reg / 4.U) % cacheLines).asUInt
       data_element := data_element_wire
@@ -120,13 +123,13 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
 
       when (io.dataWriteAck) { // trying to write data until it gets ack message
         stateReg := allocate
-        io.mem_write_en := false.B
+//        io.mem_write_en := false.B
       }.otherwise {
         stateReg := writeback
       }
     }
 
-    is(allocate) { // todo question: will i stay in same if statement whenever instruction cache is using this module? or can it be overwritten by second cache on second iteration of allocate state
+    is(allocate) {
       // here i can be reading from memory but for two purposes: instuction read or data read. i need to differentiate somehow
       io.mem_write_en := false.B
       io.mem_data_addr := data_addr_reg
@@ -134,7 +137,7 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
         io.mem_read_en_inst := true.B
 
         when(io.instReadAck) { // if i get ack from memory that i can read instruction, i start reading
-          io.mem_read_en_inst := false.B
+//          io.mem_read_en_inst := false.B
           val temp = Wire(Vec(58, Bool()))
           temp := 0.U(58.W).asBools
           for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
@@ -146,11 +149,12 @@ class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
         }.otherwise { // if i dont get read ack i stay in allocate state
           stateReg := allocate
         }
+
       }
       else {
         io.mem_read_en_data := true.B
         when(io.dataReadAck) { // if i get ack from memory that i can read data, i start reading
-          io.mem_read_en_data := false.B
+//          io.mem_read_en_data := false.B
           val temp = Wire(Vec(58, Bool()))
           temp := 0.U(58.W).asBools
           for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
