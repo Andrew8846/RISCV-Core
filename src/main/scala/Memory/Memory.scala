@@ -24,16 +24,20 @@ class Memory(memoryFile: String) extends Module {
   // i cannot have dataReadEnable and dataWriteEnable true at the same time
 
   val memory = Module(new UnifiedMemoryHelper(memoryFile))
-  val instPriority = RegInit(true.B) // Prioritize instruction fetch by default
-  val dackReadReg = RegInit(false.B)
-  val dackWriteReg = RegInit(false.B)
-  val iackReg = RegInit(false.B)
+  val instPriority = WireInit(true.B) // Prioritize instruction fetch by default3
+  val dackReadReg = WireInit(false.B)
+  val dackWriteReg = WireInit(false.B) // check these two as well
+  val iackReg = WireInit(false.B) // todo make it wire
 
   // initialise memory
   memory.io.memWrite := false.B
   memory.io.memRead := false.B
   memory.io.addr := 0.U
   memory.io.wrData := 0.U
+
+//  io.dcacheReadAck := false.B
+//  io.dcacheWriteAck := false.B
+//  io.icacheReadAck := false.B
 
 
   // Prioritized memory access
@@ -47,6 +51,9 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := true.B
     dackWriteReg := false.B
     iackReg := false.B
+//    io.dcacheReadAck := true.B
+//    io.dcacheWriteAck := false.B
+//    io.icacheReadAck := false.B
 
   }.elsewhen(io.dataWriteEnable) {
     // Priority 2: Data Write
@@ -59,6 +66,9 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := false.B
     dackWriteReg := true.B
     iackReg := false.B
+//    io.dcacheReadAck := false.B
+//    io.dcacheWriteAck := true.B
+//    io.icacheReadAck := false.B
 
   }.elsewhen(io.instrReadEnable) {
     // Priority 3: Instruction Read
@@ -70,6 +80,9 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := false.B
     dackWriteReg := false.B
     iackReg := true.B
+//    io.dcacheReadAck := false.B
+//    io.dcacheWriteAck := false.B
+//    io.icacheReadAck := true.B
 
   }.otherwise {
     // No operations
@@ -80,6 +93,9 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := false.B
     dackWriteReg := false.B
     iackReg := false.B
+//    io.dcacheReadAck := false.B
+//    io.dcacheWriteAck := false.B
+//    io.icacheReadAck := false.B
   }
 
 

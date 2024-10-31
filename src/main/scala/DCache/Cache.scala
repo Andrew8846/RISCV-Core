@@ -1,208 +1,284 @@
 package DCache
 
-import chisel3._
-import chisel3.util._
-import chisel3.experimental._
-import chisel3.util.experimental._
-import firrtl.annotations.MemoryLoadFileType
+  import chisel3._
+  import chisel3.util._
+  import chisel3.experimental._
+  import chisel3.util.experimental._
+  import firrtl.annotations.MemoryLoadFileType
 
-class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
-  val io = IO(new Bundle {
-    val write_en = if (!read_only) Some(Input(Bool())) else None
-    val read_en = Input(Bool())
-    val data_addr = Input(UInt(32.W))
-    val data_in = if (!read_only) Some(Input(UInt(32.W))) else None
-    val data_out = Output(UInt(32.W))
-    val valid = Output(Bool())
-    val busy = Output(Bool())
+  class Cache (CacheFile: String, read_only: Boolean = false) extends Module{
+    val io = IO(new Bundle {
+      val write_en = if (!read_only) Some(Input(Bool())) else None
+      val read_en = Input(Bool())
+      val data_addr = Input(UInt(32.W))
+      val data_in = if (!read_only) Some(Input(UInt(32.W))) else None
+      val data_out = Output(UInt(32.W))
+      val valid = Output(Bool())
+      val busy = Output(Bool())
 
-    val mem_write_en = Output(Bool())
-    val mem_read_en_inst = Output(Bool())
-    val mem_read_en_data = Output(Bool())
-    val mem_data_in = Output(UInt(32.W))
-    val mem_data_addr = Output(UInt(32.W))
-    val mem_data_out = Input(UInt(32.W))
-    val dataWriteAck = Input(Bool())
-    val dataReadAck = Input(Bool())
-    val instReadAck = Input(Bool())
-  })
+      val mem_write_en = Output(Bool())
+      val mem_read_en_inst = Output(Bool())
+      val mem_read_en_data = Output(Bool())
+      val mem_data_in = Output(UInt(32.W))
+      val mem_data_addr = Output(UInt(32.W))
+      val mem_data_out = Input(UInt(32.W))
+      val dataWriteAck = Input(Bool())
+      val dataReadAck = Input(Bool())
+      val instReadAck = Input(Bool())
+    })
 
-  val scalaReadOnlyBool = if(read_only) true.B else false.B
-  val write_en_reg = RegInit(false.B)
-  val read_en_reg = RegInit(false.B)
-  val data_addr_reg = Reg(UInt(32.W))
-  val data_in_reg = if (!read_only) Some(Reg(UInt(32.W))) else None
+    val scalaReadOnlyBool = if(read_only) true.B else false.B
+    val write_en_reg = RegInit(false.B)
+    val read_en_reg = RegInit(true.B)
+    val data_addr_reg = RegInit(io.data_addr) // RegInit(io.data_addr) // todo i will always have cache miss like this
+    val data_in_reg = if (!read_only) Some(Reg(UInt(32.W))) else None // if (!read_only) Some(RegInit(io.data_in.get)) else None
 
-  val cacheLines = 64.U // cache lines as a variable
-  val idle :: compare :: writeback :: allocate :: Nil = Enum(4)
-  val stateReg = RegInit(idle)
-  val index = Reg(UInt(6.W)) // stores the current cache index in a register to use in later states
-  val data_element = Reg(UInt(58.W)) // stores the loaded cache element in a register to use in later states
-  val data_element_wire = WireInit(0.asUInt(58.W)) // stores the loaded cache element in a wire to use in the same state
-  val statecount = Reg(Bool()) // waiting for 1 cycle in allocate state
+    val cacheLines = 64.U // cache lines as a variable
+    val compare :: writeback :: allocate :: Nil = Enum(3)
+    val compare1 :: compare2 :: Nil = Enum(2)
 
-  val cache_data_array = Mem(64, UInt(58.W))  // give here 64 as a variable
-  loadMemoryFromFileInline(cache_data_array, CacheFile, MemoryLoadFileType.Binary)
+    val stateReg = RegInit(compare)
+    val stateRegCompare = RegInit(compare1)
+    val index = Reg(UInt(6.W)) // stores the current cache index in a register to use in later states
+    val data_element = Reg(UInt(58.W)) // stores the loaded cache element in a register to use in later states
+    val data_element_wire = WireInit(0.asUInt(58.W)) // stores the loaded cache element in a wire to use in the same state
+    val data_address_wire = WireInit(0.asUInt(32.W)) // stores the loaded cache element in a wire to use in the same state
+    val statecount = Reg(Bool()) // waiting for 1 cycle in allocate state
+
+    val cache_data_array = Mem(64, UInt(58.W))  // give here 64 as a variable
+    loadMemoryFromFileInline(cache_data_array, CacheFile, MemoryLoadFileType.Binary)
 
   io.data_out := 0.U
   io.valid := 0.B
-  io.busy := (stateReg =/= idle) // busy when in allocate or writeback but not in compare
+  io.busy :=  (stateRegCompare =/= compare1) // busy when in allocate or writeback but not in compare
 
-  io.mem_write_en := 0.B
-  io.mem_read_en_data := 0.B
-  io.mem_read_en_inst := 0.B
-  io.mem_data_in := 0.U
-  io.mem_data_addr := 0.U
+    io.mem_write_en := 0.B
+    io.mem_read_en_data := 0.B
+    io.mem_read_en_inst := 0.B
+    io.mem_data_in := 0.U
+    io.mem_data_addr := 0.U
 
-  switch(stateReg) {
-    is(idle) { // todo move idle to compare
-      io.data_out := data_element(31, 0) // iff address is dividabable by 4 (last 2 bits) -> divide by 4 and take that address
-      // otherwise if instruction - exception,
-      when(io.read_en || io.write_en.getOrElse(false.B)) {
-        stateReg := compare
-        write_en_reg := io.write_en.getOrElse(false.B)
-        read_en_reg := io.read_en
-        data_addr_reg := io.data_addr
-        if (!read_only) data_in_reg.foreach(_ := io.data_in.get)
-        statecount := false.B
-      }
-    }
+//    write_en_reg := io.write_en.getOrElse(false.B)
+//    read_en_reg := io.read_en
+//    data_addr_reg := io.data_addr
 
-    is(compare) {
-      io.mem_read_en_inst := false.B // i jump form allocate to compare and dissable memory reads here, hence breaking combinational loop
-      io.mem_read_en_data := false.B
-      index := (data_addr_reg / 4.U) % cacheLines
-      data_element_wire := cache_data_array((data_addr_reg / 4.U) % cacheLines).asUInt
-      data_element := data_element_wire
+    switch(stateReg) {
+      //    is(idle) { // todo move idle to compare
+      //      io.data_out := data_element(31, 0) // iff address is dividabable by 4 (last 2 bits) -> divide by 4 and take that address
+      //      // otherwise if instruction - exception,
+      //      when(io.read_en || io.write_en.getOrElse(false.B)) {
+      //        stateReg := compare
+      //        write_en_reg := io.write_en.getOrElse(false.B)
+      //        read_en_reg := io.read_en
+      //        data_addr_reg := io.data_addr
+      //        if (!read_only) data_in_reg.foreach(_ := io.data_in.get)
+      //        statecount := false.B
+      //      }
+      //    }
 
-      when(data_element_wire(57) && (data_element_wire(55, 32).asUInt === data_addr_reg(31, 8).asUInt)) {
-        stateReg := idle
-        io.valid := true.B
-        when(read_en_reg) {
-          io.data_out := data_element_wire(31, 0)
+      is(compare) {
+
+        switch(stateRegCompare) {
+          is(compare1) {
+            data_address_wire := io.data_addr
+          }
+          is(compare2) {
+            data_address_wire := data_addr_reg
+          }
+
         }
-        if(!read_only) {
-          when(write_en_reg) {
+
+        io.mem_read_en_inst := false.B // i jump form allocate to compare and dissable memory reads here, hence breaking combinational loop
+        io.mem_read_en_data := false.B
+
+        when(io.read_en || io.write_en.getOrElse(false.B)) {
+          write_en_reg := io.write_en.getOrElse(false.B)
+          read_en_reg := io.read_en
+          data_addr_reg := io.data_addr
+          if (!read_only) data_in_reg.foreach(_ := io.data_in.get)
+
+          index := (data_address_wire / 4.U) % cacheLines
+          data_element_wire := cache_data_array((data_address_wire / 4.U) % cacheLines).asUInt
+          data_element := data_element_wire
+//          io.busy := true.B
+          when(data_element_wire(57) && (data_element_wire(55, 32).asUInt === data_address_wire(31, 8).asUInt)) {
+            stateRegCompare := compare1
+//            io.busy := false.B
+//            write_en_reg := io.write_en.getOrElse(false.B)
+//            read_en_reg := io.read_en
+//            data_addr_reg := io.data_addr
+
+            io.valid := true.B
+            when(read_en_reg) {
+              io.data_out := data_element_wire(31, 0)
+            }
+
+            if (!read_only) {
+              when(write_en_reg) {
+                // Update the cache line with the new data and set dirty bit
+                val temp = Wire(Vec(58, Bool()))
+                temp := 0.U(58.W).asBools
+                temp(57) := true.B
+                temp(56) := true.B // Set dirty bit
+                for (i <- 0 until 32) { temp(i) := data_in_reg.get(i) } // Store new data
+                for (i <- 32 until 56) { temp(i) := data_element_wire(i) } // Keep the tag
+                cache_data_array(index) := temp.asUInt
+              }
+            }
+          }.otherwise {
+            stateRegCompare := compare2
+//            io.busy := true.B
+            if(!read_only) {
+              when(data_element_wire(56) && data_element_wire(57)) {
+                stateReg := writeback
+              }.otherwise {
+                stateReg := allocate
+              }
+            }
+            else {
+              stateReg := allocate
+            }
+          }
+        }
+
+      }
+
+      //      index := (data_addr_reg / 4.U) % cacheLines
+      //      data_element_wire := cache_data_array((data_addr_reg / 4.U) % cacheLines).asUInt
+      //      data_element := data_element_wire
+      //
+      //      when(data_element_wire(57) && (data_element_wire(55, 32).asUInt === data_addr_reg(31, 8).asUInt)) {
+      //        stateReg := idle
+      //        io.valid := true.B
+      //        when(read_en_reg) {
+      //          io.data_out := data_element_wire(31, 0)
+      //        }
+      //        if(!read_only) {
+      //          when(write_en_reg) {
+      //            val temp = Wire(Vec(58, Bool()))
+      //            temp := 0.U(58.W).asBools
+      //            temp(57) := true.B
+      //            temp(56) := true.B // set dirty bit
+      //
+      //            for (i <- 0 until 32) { temp(i) := data_in_reg.get(i) } // new data is stored
+      //            for (i <- 32 until 56) { temp(i) := data_element_wire(i) } // the tag remains the same
+      //            cache_data_array(index) := temp.asUInt
+      //          }
+      //        }
+      //      }.otherwise {
+      //        if(!read_only) {
+      //          when(data_element_wire(56) && data_element_wire(57)) {
+      //            stateReg := writeback
+      //          }.otherwise {
+      //            stateReg := allocate
+      //          }
+      //        }
+      //        else {
+      //          stateReg := allocate
+      //        }
+      //
+      //      }
+
+      is(writeback) {
+//        io.busy := true.B
+        io.mem_write_en := true.B
+        io.mem_read_en_inst := false.B
+        io.mem_read_en_data := false.B
+        val temp = Wire(Vec(32, Bool()))
+        temp := 0.U(32.W).asBools // the address where the dirty cache element should be stored in memory
+        temp(1) := false.B
+        temp(0) := false.B // first two bits 0 as byte offset
+        for (i <- 2 until 8) { temp(i) := index.asBools(i - 2) } // next 6 bits from index
+        for (i <- 8 until 32) { temp(i) := data_element(i + 24) } // the rest 24 bits from the tag
+        io.mem_data_addr := temp.asUInt
+        io.mem_data_in := data_element(31, 0) // write the data in the dirty element to the memory
+
+        when (io.dataWriteAck) { // trying to write data until it gets ack message
+          stateReg := allocate
+          //        io.mem_write_en := false.B
+        }.otherwise {
+          stateReg := writeback
+        }
+      }
+
+      is(allocate) {
+//        io.busy := true.B
+        // here i can be reading from memory but for two purposes: instuction read or data read. i need to differentiate somehow
+        io.mem_write_en := false.B
+        io.mem_data_addr := data_addr_reg
+        if(read_only) {
+          io.mem_read_en_inst := true.B
+
+          when(io.instReadAck) { // if i get ack from memory that i can read instruction, i start reading
+            //          io.mem_read_en_inst := false.B
             val temp = Wire(Vec(58, Bool()))
             temp := 0.U(58.W).asBools
+            for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+            temp(56) := false.B
             temp(57) := true.B
-            temp(56) := true.B // set dirty bit
-
-            for (i <- 0 until 32) { temp(i) := data_in_reg.get(i) } // new data is stored
-            for (i <- 32 until 56) { temp(i) := data_element_wire(i) } // the tag remains the same
+            for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
             cache_data_array(index) := temp.asUInt
-          }
-        }
-      }.otherwise {
-        if(!read_only) {
-          when(data_element_wire(56) && data_element_wire(57)) {
-            stateReg := writeback
-          }.otherwise {
+            stateReg := compare
+//            stateRegCompare := compare2
+          }.otherwise { // if i dont get read ack i stay in allocate state
             stateReg := allocate
           }
+
         }
         else {
-          stateReg := allocate
-        }
+          io.mem_read_en_data := true.B
+          when(io.dataReadAck) { // if i get ack from memory that i can read data, i start reading
+            //          io.mem_read_en_data := false.B
+            val temp = Wire(Vec(58, Bool()))
+            temp := 0.U(58.W).asBools
+            for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+            temp(56) := false.B
+            temp(57) := true.B
+            for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+            cache_data_array(index) := temp.asUInt
+            stateReg := compare
+          }.otherwise { // if i dont get read ack i stay in allocate state
+            stateReg := allocate
+          }
 
+        }
+        //      io.mem_read_en := true.B
+        //      io.mem_write_en := false.B
+        //      io.mem_data_addr := data_addr_reg
+
+        //      when(io.dataReadAck || io.instReadAck) { // if i get ack from memory that i can read, i start reading
+        //        io.mem_read_en := false.B
+        //        val temp = Wire(Vec(58, Bool()))
+        //        temp := 0.U(58.W).asBools
+        //        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+        //        temp(56) := false.B
+        //        temp(57) := true.B
+        //        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+        //        cache_data_array(index) := temp.asUInt
+        //        stateReg := compare
+        //      }.otherwise { // if i dont get read ack i stay in allocate state
+        //        stateReg := allocate
+        //      }
+        //
+        //      when(statecount) {
+        //        statecount := false.B
+        //        io.mem_read_en := false.B
+        //        val temp = Wire(Vec(58, Bool()))
+        //        temp := 0.U(58.W).asBools
+        //        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
+        //        temp(56) := false.B
+        //        temp(57) := true.B
+        //        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
+        //        cache_data_array(index) := temp.asUInt
+        //        stateReg := compare
+        //      }.otherwise {
+        //        statecount := true.B
+        //        io.mem_read_en := true.B
+        //        io.mem_write_en := false.B
+        //        io.mem_data_addr := data_addr_reg
+        //      }
       }
     }
 
-    is(writeback) {
-      io.mem_write_en := true.B
-      io.mem_read_en_inst := false.B
-      io.mem_read_en_data := false.B
-      val temp = Wire(Vec(32, Bool()))
-      temp := 0.U(32.W).asBools // the address where the dirty cache element should be stored in memory
-      temp(1) := false.B
-      temp(0) := false.B // first two bits 0 as byte offset
-      for (i <- 2 until 8) { temp(i) := index.asBools(i - 2) } // next 6 bits from index
-      for (i <- 8 until 32) { temp(i) := data_element(i + 24) } // the rest 24 bits from the tag
-      io.mem_data_addr := temp.asUInt
-      io.mem_data_in := data_element(31, 0) // write the data in the dirty element to the memory
-
-      when (io.dataWriteAck) { // trying to write data until it gets ack message
-        stateReg := allocate
-//        io.mem_write_en := false.B
-      }.otherwise {
-        stateReg := writeback
-      }
-    }
-
-    is(allocate) {
-      // here i can be reading from memory but for two purposes: instuction read or data read. i need to differentiate somehow
-      io.mem_write_en := false.B
-      io.mem_data_addr := data_addr_reg
-      if(read_only) {
-        io.mem_read_en_inst := true.B
-
-        when(io.instReadAck) { // if i get ack from memory that i can read instruction, i start reading
-//          io.mem_read_en_inst := false.B
-          val temp = Wire(Vec(58, Bool()))
-          temp := 0.U(58.W).asBools
-          for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
-          temp(56) := false.B
-          temp(57) := true.B
-          for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
-          cache_data_array(index) := temp.asUInt
-          stateReg := compare
-        }.otherwise { // if i dont get read ack i stay in allocate state
-          stateReg := allocate
-        }
-
-      }
-      else {
-        io.mem_read_en_data := true.B
-        when(io.dataReadAck) { // if i get ack from memory that i can read data, i start reading
-//          io.mem_read_en_data := false.B
-          val temp = Wire(Vec(58, Bool()))
-          temp := 0.U(58.W).asBools
-          for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
-          temp(56) := false.B
-          temp(57) := true.B
-          for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
-          cache_data_array(index) := temp.asUInt
-          stateReg := compare
-        }.otherwise { // if i dont get read ack i stay in allocate state
-          stateReg := allocate
-        }
-
-      }
-//      io.mem_read_en := true.B
-//      io.mem_write_en := false.B
-//      io.mem_data_addr := data_addr_reg
-
-//      when(io.dataReadAck || io.instReadAck) { // if i get ack from memory that i can read, i start reading
-//        io.mem_read_en := false.B
-//        val temp = Wire(Vec(58, Bool()))
-//        temp := 0.U(58.W).asBools
-//        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
-//        temp(56) := false.B
-//        temp(57) := true.B
-//        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
-//        cache_data_array(index) := temp.asUInt
-//        stateReg := compare
-//      }.otherwise { // if i dont get read ack i stay in allocate state
-//        stateReg := allocate
-//      }
-//
-//      when(statecount) {
-//        statecount := false.B
-//        io.mem_read_en := false.B
-//        val temp = Wire(Vec(58, Bool()))
-//        temp := 0.U(58.W).asBools
-//        for (i <- 0 until 32) { temp(i) := io.mem_data_out(i) }
-//        temp(56) := false.B
-//        temp(57) := true.B
-//        for (i <- 32 until 56) { temp(i) := data_addr_reg(i - 24) }
-//        cache_data_array(index) := temp.asUInt
-//        stateReg := compare
-//      }.otherwise {
-//        statecount := true.B
-//        io.mem_read_en := true.B
-//        io.mem_write_en := false.B
-//        io.mem_data_addr := data_addr_reg
-//      }
-    }
+//    io.data_out := data_out_reg
   }
-}

@@ -20,7 +20,7 @@ import chisel3.experimental.{ChiselAnnotation, annotate}
 import chisel3.util.experimental.loadMemoryFromFileInline
 import firrtl.annotations.MemorySynthInit
 import config.{DMEMsetupSignals, MemUpdates}
-class MEM(DataFile: String) extends Module {
+class MEM extends Module {
   val testHarness = IO(
     new Bundle {
       val DMEMsetup      = Input(new DMEMsetupSignals)
@@ -35,6 +35,7 @@ class MEM(DataFile: String) extends Module {
       val dataAddress = Input(UInt(32.W))
       val writeEnable = Input(Bool())
       val readEnable  = Input(Bool())
+
       val dataIn_o      = Output(UInt())
       val dataAddress_o = Output(UInt(32.W))
       val writeEnable_o = Output(Bool())

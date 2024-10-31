@@ -35,7 +35,7 @@ class IFpipe extends Module
   )
 
   val currentPCReg   = RegEnable(io.inCurrentPC, 0.U, !io.stall)  
-  val instructionReg = RegEnable(io.inInstruction, Inst.NOP, !io.stall)  
+  val instructionReg = RegEnable(io.inInstruction, Inst.NOP, !io.stall)
 
 
   val flushDelayed = RegInit(Bool(), 0.U)

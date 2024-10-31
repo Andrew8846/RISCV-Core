@@ -19,7 +19,7 @@ import config.Inst._
 import InstructionMemory.InstructionMemory
 import Memory.CachesAndMemory
 
-class IF(BinaryFile: String) extends Module
+class IF extends Module
 {
 
   val testHarness = IO(

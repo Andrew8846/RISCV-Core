@@ -22,7 +22,7 @@ import HazardUnit.HazardUnit
 import Memory.CachesAndMemory
 import config.{MemUpdates, RegisterUpdates, SetupSignals, TestReadouts, Instruction}
 
-class top_MC(BinaryFile: String, DataFile: String) extends Module {
+class top_MC(BinaryFile: String) extends Module {
 
   val testHarness = IO(
     new Bundle {
@@ -41,10 +41,10 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   val MEMBarrier = Module(new MEMpipe).io
 
  // Pipeline Stages
-  val IF  = Module(new IF(BinaryFile))
+  val IF  = Module(new IF)
   val ID  = Module(new ID)
   val EX  = Module(new EX)
-  val MEM = Module(new MEM(DataFile))
+  val MEM = Module(new MEM)
   val writeBackData = Wire(UInt())
 
   // Hazard Unit
@@ -145,7 +145,7 @@ class top_MC(BinaryFile: String, DataFile: String) extends Module {
   HzdUnit.io.wrongAddrPred      := EX.io.wrongAddrPred
   HzdUnit.io.btbPrediction      := IDBarrier.outBTBPrediction
   HzdUnit.io.branchType         := IDBarrier.outBranchType
-  HzdUnit.io.membusy            := CachesAndMemory.io.d_busy || CachesAndMemory.io.i_busy // TODO changed memBusy signal
+  HzdUnit.io.membusy            := CachesAndMemory.io.d_busy || CachesAndMemory.io.i_busy
 
   //Signals to EXBarrier
   EXBarrier.inALUResult       := EX.io.ALUResult
