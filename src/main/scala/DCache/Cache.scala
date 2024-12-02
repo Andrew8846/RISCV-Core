@@ -32,6 +32,8 @@ package DCache
     val read_en_reg = RegInit(true.B)
     val data_addr_reg = RegInit(io.data_addr) // RegInit(io.data_addr) // todo i will always have cache miss like this
     val data_in_reg = if (!read_only) Some(Reg(UInt(32.W))) else None // if (!read_only) Some(RegInit(io.data_in.get)) else None
+    val data_out_reg = RegInit(0.asUInt(32.W))
+    val validReg = RegInit(false.B)
 
     val cacheLines = 64.U // cache lines as a variable
     val compare :: writeback :: allocate :: Nil = Enum(3)
@@ -50,6 +52,7 @@ package DCache
 
   io.data_out := 0.U
   io.valid := 0.B
+    validReg := false.B
   io.busy :=  (stateRegCompare =/= compare1) // busy when in allocate or writeback but not in compare
 
     io.mem_write_en := 0.B
@@ -81,6 +84,9 @@ package DCache
         switch(stateRegCompare) {
           is(compare1) {
             data_address_wire := io.data_addr
+            io.data_out := data_out_reg
+            io.valid := validReg
+            validReg := false.B
           }
           is(compare2) {
             data_address_wire := data_addr_reg
@@ -108,9 +114,11 @@ package DCache
 //            read_en_reg := io.read_en
 //            data_addr_reg := io.data_addr
 
-            io.valid := true.B
+//            io.valid := true.B
+            validReg := true.B
             when(read_en_reg) {
-              io.data_out := data_element_wire(31, 0)
+//              io.data_out := data_element_wire(31, 0)
+              data_out_reg := data_element_wire(31,0)
             }
 
             if (!read_only) {
@@ -278,6 +286,10 @@ package DCache
         //        io.mem_data_addr := data_addr_reg
         //      }
       }
+    }
+
+    when (validReg === true.B) {
+      validReg := false.B
     }
 
 //    io.data_out := data_out_reg

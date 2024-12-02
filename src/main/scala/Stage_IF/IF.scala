@@ -35,6 +35,8 @@ class IF extends Module
     val IFBarrierPC        = Input(UInt())
     val stall              = Input(Bool())
     val instruction_in     = Input(new Instruction)
+    // new added
+    val validInstruction              = Input(Bool())
     // Inputs for BTB, will come from EX stage and Hazard Unit
     val updatePrediction   = Input(Bool())
     val newBranch          = Input(Bool())
@@ -59,17 +61,31 @@ class IF extends Module
   val PCplus4           = Wire(UInt(32.W))
   val instruction       = Wire(new Instruction)
   val branch            = WireInit(Bool(), false.B)
+  val branchAddrRegister = RegInit(UInt(32.W), 0.U)
+  val isBranch          = RegInit(Bool(), false.B)
+  val stall2            = Wire(Bool())
+  stall2   := false.B
+//  val placeholderInstruction = Inst.PLACEHOLDER // random instruction 1 in this case (can be discussed)
 
   // i commented those two lines and I question even if they are necessary TODO
 //  InstructionMemory.testHarness.setupSignals := testHarness.InstructionMemorySetup
   testHarness.PC := 0.U
+  // Check if we have received the real instruction or just the placeholder
+//  val isPlaceholder = WireInit(false.B)
+//  isPlaceholder := false.B
+//  when (io.instruction_in.asUInt === placeholderInstruction.asUInt) {
+//    isPlaceholder := true.B
+//    PCplus4 := PC
+//  }.otherwise {
+//    PCplus4 := PC + 4.U
+//  }
 
+//  instruction := Mux(isPlaceholder, Inst.NOP, io.instruction_in)
   instruction := io.instruction_in
 //  instruction := InstructionMemory.io.instr_out.asTypeOf(new Instruction)
 //  io.fetchBusy := InstructionMemory.io.i_busy //InstructionMemory.io.busy
 //  instruction := InstructionMemory.io.instruction.asTypeOf(new Instruction)
 
-  // Adder to increment PC
   PCplus4 := PC + 4.U
 
   // BTB signals
@@ -86,10 +102,15 @@ class IF extends Module
 
   when(io.branchMispredicted){  // Case of branch mispredicted, we realize that in EX stage
     when(io.branchTaken){  // Branch Behavior is Taken, but Predicted Not-Taken
-      nextPC := io.branchAddr
+      branchAddrRegister := io.branchAddr
+      isBranch := true.B
     }
       .otherwise{
-        nextPC := io.PCplus4ExStage
+        when(isBranch) {
+          nextPC := branchAddrRegister
+        }.otherwise {
+          nextPC := io.PCplus4ExStage
+        }
       }
   }
     .elsewhen(BTB.io.btbHit){  // BTB hits -> Choose nextPC as per the prediction
@@ -101,8 +122,14 @@ class IF extends Module
         }
     }
     .otherwise{ // Normal instruction OR assume not taken (BTB miss)
-      nextPC := PCplus4
+      when(isBranch) {
+        nextPC := branchAddrRegister
+      }.otherwise {
+        nextPC := PCplus4
+      }
     }
+
+
   // Stall PC
   when(io.stall){
     when(io.branchMispredicted) {
@@ -114,15 +141,22 @@ class IF extends Module
     //Fetch prev instruction -- Stalling the part of IF Barrier that holds the instruction
     //InstructionMemory.io.instructionAddress := io.IFBarrierPC
 //    InstructionMemory.io.instr_addr := io.IFBarrierPC
-    io.instr_addr_out := io.IFBarrierPC
-
+    io.instr_addr_out := io.IFBarrierPC //io.IFBarrierPC
+//    io.instr_addr_out := PC
   }.otherwise{
     //Fetch instruction
 //    InstructionMemory.io.instructionAddress := PC
 //    InstructionMemory.io.instr_addr := PC // todo i only give this one input to my cachesAndMemory class. should i give some zero values for other inputs
-    io.instr_addr_out := PC
+    io.instr_addr_out := PC // PC
     // PC register gets nextPC
     PC := nextPC
+  }
+
+  stall2 := !io.validInstruction && !isBranch
+  when (!io.validInstruction) {
+    PC := PC
+  }.otherwise {
+    isBranch := false.B
   }
   //Mux for controlling which address to go to next
 //  when(io.branchMispredicted){  // Case of branch mispredicted, we realize that in EX stage
@@ -146,7 +180,7 @@ class IF extends Module
 //  }
   
   // Send PC to the rest of the pipeline
-  io.PC := PC
+  io.PC := PC // PC
 
   io.instruction := instruction
 

@@ -52,6 +52,7 @@ class top_MC(BinaryFile: String) extends Module {
 
  // Memory
  val CachesAndMemory = Module(new CachesAndMemory(BinaryFile))
+ val preloadComplete = RegInit(false.B)
 
 
   IF.testHarness.InstructionMemorySetup := testHarness.setupSignals.IMEMsignals
@@ -66,14 +67,25 @@ class top_MC(BinaryFile: String) extends Module {
   testHarness.memUpdates                := MEM.testHarness.testUpdates
   testHarness.currentPC                 := IF.testHarness.PC
 
+// when(!preloadComplete) {
+//
+//  when (CachesAndMemory.io.i_valid) { // Ensure a valid instruction signal if available
+//   //   IF.io.instruction_in := CachesAndMemory.io.instr_out.asTypeOf(new Instruction)
+//   preloadComplete := true.B // Indicate preload is complete
+//  }
+//
+// }
+
+
 
   // Fetch Stage
-  CachesAndMemory.io.instr_addr := IF.io.instr_addr_out
-  CachesAndMemory.io.read_en_instr := true.B
+//  CachesAndMemory.io.instr_addr := IF.io.instr_addr_out
+//  CachesAndMemory.io.read_en_instr := true.B
   IF.io.instruction_in     := CachesAndMemory.io.instr_out.asTypeOf(new Instruction)
+  IF.io.validInstruction   := CachesAndMemory.io.i_valid
   IF.io.branchTaken        := EX.io.branchTaken
   IF.io.IFBarrierPC        := IFBarrier.outCurrentPC
-  IF.io.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy     // Stall Fetch -> PC_en=0
+  IF.io.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy // !valid    // Stall Fetch -> PC_en=0
   IF.io.newBranch          := EX.io.newBranch
   IF.io.updatePrediction   := EX.io.updatePrediction
   IF.io.entryPC            := IDBarrier.outPC
@@ -81,10 +93,14 @@ class top_MC(BinaryFile: String) extends Module {
   IF.io.branchMispredicted := HzdUnit.io.branchMispredicted
   IF.io.PCplus4ExStage     := EX.io.outPCplus4
 
+  CachesAndMemory.io.read_en_instr := true.B
+  CachesAndMemory.io.instr_addr := IF.io.instr_addr_out
+
+
   //Signals to IFBarrier
   IFBarrier.inCurrentPC        := IF.io.PC
   IFBarrier.inInstruction      := IF.io.instruction
-  IFBarrier.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy     // Stall Decode -> IFBarrier_en=0
+  IFBarrier.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy  // Stall Decode -> IFBarrier_en=0
   IFBarrier.flush              := HzdUnit.io.flushD
   IFBarrier.inBTBHit           := IF.io.btbHit
   IFBarrier.inBTBPrediction    := IF.io.btbPrediction

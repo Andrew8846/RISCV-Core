@@ -27,7 +27,7 @@ class UnifiedMemoryHelper(memoryFile: String) extends Module {
 
   io.rdData := 0.U
   when(io.memRead) {
-    io.rdData := memory(io.addr(31,2)) // this should work for instruction but in case of data what happens?
+    io.rdData := memory(io.addr(31,2) + 1.U) // this should work for instruction but in case of data what happens?
   }
 
 }
