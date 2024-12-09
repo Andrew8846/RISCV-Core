@@ -14,6 +14,7 @@ class UnifiedMemoryHelper(memoryFile: String) extends Module {
   // data starts after instr. soo 4096 is not really only for instructions.
   val memory = SyncReadMem(1052672, UInt(32.W)) // 1052672 = 1048576 (for data) + 4096 (for instructions) -- can be parametrized
   // maybe make memory 2^32 = 4 294 967 296
+  val memAddressWire = WireInit(0.asUInt(32.W))
 
   loadMemoryFromFileInline(memory, memoryFile)
 
@@ -21,13 +22,15 @@ class UnifiedMemoryHelper(memoryFile: String) extends Module {
   // divide addr by 4
   // concat 00 and (31,2)
 
+  memAddressWire := io.addr(31,2) + 1.U
+
   when(io.memWrite) {
     memory(io.addr) := io.wrData
   }
 
   io.rdData := 0.U
   when(io.memRead) {
-    io.rdData := memory(io.addr(31,2) + 1.U) // this should work for instruction but in case of data what happens?
+    io.rdData := memory(memAddressWire) // this should work for instruction but in case of data what happens?
   }
 
 }

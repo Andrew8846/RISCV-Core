@@ -1,0 +1,146 @@
+# Preference setting overrides
+gui_create_pref_key -category {Globals} -key {load_detail_for_funcov} -value_type {bool} -value {false}
+
+# State setting overrides
+gui_state_default_create -off -ini
+gui_set_state_value -category Globals -key recent_databases -value {{gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V7} {gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V6} {gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V5} {gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V4} {gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V3}}
+gui_set_state_value -category Globals -key recent_sessions -value {{gui_load_session -ignore_errors -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/session.RISCV_TOP.vcd.vpd.tcl}}
+gui_set_state_value -category Globals -key recent_tcl_scripts -value {{gui_dve_source -global /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/session.RISCV_TOP.vcd.vpd.tcl}}
+gui_set_state_value -category Layout -key child_console_size_x -value 1724
+gui_set_state_value -category Layout -key child_console_size_y -value 173
+gui_set_state_value -category Layout -key child_data_coltype -value 120
+gui_set_state_value -category Layout -key child_data_colvalue -value 169
+gui_set_state_value -category Layout -key child_data_colvariable -value 432
+gui_set_state_value -category Layout -key child_data_size_x -value 727
+gui_set_state_value -category Layout -key child_data_size_y -value 761
+gui_set_state_value -category Layout -key child_hier_col3 -value {-1}
+gui_set_state_value -category Layout -key child_hier_colhier -value 177
+gui_set_state_value -category Layout -key child_hier_colpd -value 0
+gui_set_state_value -category Layout -key child_hier_coltype -value 108
+gui_set_state_value -category Layout -key child_hier_size_x -value 291
+gui_set_state_value -category Layout -key child_hier_size_y -value 761
+gui_set_state_value -category Layout -key child_hier_sort_order -value 1
+gui_set_state_value -category Layout -key child_list_down -value 191
+gui_set_state_value -category Layout -key child_list_right -value 442
+gui_set_state_value -category Layout -key child_source_docknewline -value false
+gui_set_state_value -category Layout -key child_source_pos_x -value {-2}
+gui_set_state_value -category Layout -key child_source_pos_y -value {-15}
+gui_set_state_value -category Layout -key child_source_size_x -value 709
+gui_set_state_value -category Layout -key child_source_size_y -value 756
+gui_set_state_value -category Layout -key child_wave_colname -value 344
+gui_set_state_value -category Layout -key child_wave_colvalue -value 344
+gui_set_state_value -category Layout -key child_wave_left -value 693
+gui_set_state_value -category Layout -key child_wave_right -value 1689
+gui_set_state_value -category Layout -key main_pos_x -value 168
+gui_set_state_value -category Layout -key main_pos_y -value 238
+gui_set_state_value -category Layout -key main_size_x -value 1892
+gui_set_state_value -category Layout -key main_size_y -value 1253
+gui_set_state_value -category Layout -key stand_list_child_docknewline -value false
+gui_set_state_value -category Layout -key stand_list_child_pos_x -value {-2}
+gui_set_state_value -category Layout -key stand_list_child_pos_y -value {-15}
+gui_set_state_value -category Layout -key stand_list_child_size_x -value 602
+gui_set_state_value -category Layout -key stand_list_child_size_y -value 336
+gui_set_state_value -category Layout -key stand_list_top_pos_x -value 515
+gui_set_state_value -category Layout -key stand_list_top_pos_y -value 114
+gui_set_state_value -category Layout -key stand_list_top_size_x -value 1112
+gui_set_state_value -category Layout -key stand_list_top_size_y -value 611
+gui_set_state_value -category Layout -key stand_wave_child_docknewline -value false
+gui_set_state_value -category Layout -key stand_wave_child_pos_x -value {-2}
+gui_set_state_value -category Layout -key stand_wave_child_pos_y -value {-15}
+gui_set_state_value -category Layout -key stand_wave_child_size_x -value 2392
+gui_set_state_value -category Layout -key stand_wave_child_size_y -value 1165
+gui_set_state_value -category Layout -key stand_wave_top_pos_x -value 85
+gui_set_state_value -category Layout -key stand_wave_top_pos_y -value 160
+gui_set_state_value -category Layout -key stand_wave_top_size_x -value 2472
+gui_set_state_value -category Layout -key stand_wave_top_size_y -value 1411
+gui_create_state_key -category FindDialog -key m_pMatchCase -value_type bool -value false
+gui_create_state_key -category FindDialog -key m_pMatchWord -value_type bool -value false
+gui_create_state_key -category FindDialog -key m_pUseCombo -value_type string -value {}
+gui_create_state_key -category FindDialog -key m_pWrapAround -value_type bool -value true
+gui_create_state_key -category Widget_History -key TopLevel.1|qt_left_dock|DockWnd2|DLPane.1|pages|Data.1|hbox|textfilter -value_type string -value {io_valid state {}}
+gui_state_default_create -off
+
+# Begin command logging
+gui_open_db -file /import/lab/users/mazmishvili/RISCV-Core/test_run_dir/main_tb_should_pass/RISCV_TOP.vcd -design V1
+gui_list_select -id Hier.1 -current_item_name RISCV_TOP -current_item_type Scope  -selected  { RISCV_TOP   }
+gui_list_expand -id  Hier.1   RISCV_TOP
+gui_list_expand -id  Hier.1   RISCV_TOP.top_MC
+gui_list_select -id Hier.1 -current_item_name RISCV_TOP.top_MC.IF -current_item_type Scope  -selected  { RISCV_TOP.top_MC.IF   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.IF.io_PC[31:0]}   }
+gui_list_show_data -select -id  Data.1   {RISCV_TOP.top_MC.IF.io_PC[31:0]}
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.IF.io_PC[31:0]}  {RISCV_TOP.top_MC.IF.io_instruction_instruction[31:0]}   }
+gui_open_window Wave
+gui_list_add -id Wave.1 -from Data.1 { {RISCV_TOP.top_MC.IF.io_instruction_instruction[31:0]} {RISCV_TOP.top_MC.IF.io_PC[31:0]} } -insertionbar
+gui_list_select -id Wave.1 -selected  { Group1   }
+gui_sg_rename  Group1   IF
+gui_list_select -id Wave.1 -selected  {  }
+gui_list_select -id Hier.1 -current_item_name RISCV_TOP.top_MC.ID -current_item_type Scope  -selected  { RISCV_TOP.top_MC.ID   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.ID.io_instruction_instruction[31:0]}   }
+gui_list_create_group_when_add -wave -enable
+gui_list_add -id Wave.1 -from Data.1 { {RISCV_TOP.top_MC.ID.io_instruction_instruction[31:0]} } -insertionbar
+gui_marker_move -id  Wave.1 C1 393
+gui_marker_move -id  Wave.1 C1 41
+gui_marker_move -id  Wave.1 C1 281
+gui_marker_move -id  Wave.1 C1 81
+gui_list_select -id Hier.1 -current_item_name RISCV_TOP.top_MC.IDpipe -current_item_type Scope  -selected  { RISCV_TOP.top_MC.IDpipe   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.IDpipe.io_inPC[31:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.IDpipe.io_inPC[31:0]}  {RISCV_TOP.top_MC.IDpipe.io_outPC[31:0]}   }
+gui_list_add -id Wave.1 -from Data.1 { {RISCV_TOP.top_MC.IDpipe.io_inPC[31:0]} {RISCV_TOP.top_MC.IDpipe.io_outPC[31:0]} } -insertionbar
+gui_marker_move -id  Wave.1 C1 487
+gui_list_select -id Wave.1 -selected  { Group2   }
+gui_marker_move -id  Wave.1 C1 91
+gui_marker_move -id  Wave.1 C1 78
+gui_marker_move -id  Wave.1 C1 81
+gui_sg_rename  Group2   ID
+gui_list_select -id Wave.1 -selected  { Group3   }
+gui_sg_rename  Group3   {ID pipe}
+gui_marker_move -id  Wave.1 C1 143
+gui_marker_move -id  Wave.1 C1 81
+gui_marker_move -id  Wave.1 C1 51
+gui_marker_move -id  Wave.1 C1 41
+gui_marker_move -id  Wave.1 C1 98
+gui_marker_move -id  Wave.1 C1 42
+gui_list_select -id Hier.1 -current_item_name RISCV_TOP.top_MC.EX -current_item_type Scope  -selected  { RISCV_TOP.top_MC.EX   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_branchType[2:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_branchType[2:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}  RISCV_TOP.top_MC.EX.Branch_OP   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}  {RISCV_TOP.top_MC.EX.io_ALUop[4:0]}   }
+gui_list_select -id Data.1 -selected  { {RISCV_TOP.top_MC.EX.io_PC[31:0]}  {RISCV_TOP.top_MC.EX.io_immData[31:0]}  {RISCV_TOP.top_MC.EX.io_ALUop[4:0]}  RISCV_TOP.top_MC.EX.io_newBranch   }
+gui_list_add -id Wave.1 -from Data.1 { {RISCV_TOP.top_MC.EX.io_ALUop[4:0]} RISCV_TOP.top_MC.EX.io_newBranch {RISCV_TOP.top_MC.EX.io_PC[31:0]} {RISCV_TOP.top_MC.EX.io_immData[31:0]} } -insertionbar
+gui_marker_move -id  Wave.1 C1 449
+gui_marker_move -id  Wave.1 C1 451
+gui_marker_move -id  Wave.1 C1 491
+gui_list_select -id Wave.1 -selected  { Group4   }
+gui_sg_rename  Group4   EX
+gui_list_select -id Wave.1 -selected  { RISCV_TOP.top_MC.EX.io_newBranch   }
+gui_marker_move -id  Wave.1 C1 81
+gui_marker_move -id  Wave.1 C1 121
+gui_marker_move -id  Wave.1 C1 441
+gui_marker_move -id  Wave.1 C1 461
+gui_marker_move -id  Wave.1 C1 481
+gui_marker_move -id  Wave.1 C1 491
+gui_marker_move -id  Wave.1 C1 471
+gui_list_select -id Wave.1 -selected  { {RISCV_TOP.top_MC.ID.io_instruction_instruction[31:0]}   }
+gui_list_set_selected_property -id Wave.1 -radix unsigned
+gui_list_set_selected_property -id Wave.1 -radix hex
+gui_marker_move -id  Wave.1 C1 152
+gui_marker_move -id  Wave.1 C1 512
+gui_marker_move -id  Wave.1 C1 501
+gui_marker_move -id  Wave.1 C1 491
+gui_marker_move -id  Wave.1 C1 163
+gui_marker_move -id  Wave.1 C1 72
+gui_marker_move -id  Wave.1 C1 51
+gui_marker_move -id  Wave.1 C1 91
+gui_marker_move -id  Wave.1 C1 82
+gui_marker_move -id  Wave.1 C1 80
+gui_marker_move -id  Wave.1 C1 59
+gui_marker_move -id  Wave.1 C1 41
+gui_marker_move -id  Wave.1 C1 44
+gui_marker_move -id  Wave.1 C1 51
+gui_marker_move -id  Wave.1 C1 81
+gui_marker_move -id  Wave.1 C1 51
+gui_marker_move -id  Wave.1 C1 65
+gui_marker_move -id  Wave.1 C1 81

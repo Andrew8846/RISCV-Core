@@ -1,0 +1,71 @@
+00000000 <_start>:
+   0:   00a00093        li    x1, 15              # x1 = 15
+   4:   00500113        li    x2, 5               # x2 = 5
+   8:   00000193        li    x3, 0               # x3 = 0
+   c:   00000213        li    x4, 0               # x4 = 0
+
+   # ADD and ADDI
+  10:   00208133        add   x3, x1, x2          # x3 = x1 + x2
+  14:   00a19193        addi  x3, x3, 10          # x3 = x3 + 10
+
+   # SUB
+  18:   402101b3        sub   x3, x3, x2          # x3 = x3 - x2
+
+   # Logical AND, OR, XOR
+  1c:   0020a1b3        and   x3, x1, x2          # x3 = x1 & x2
+  20:   0020e1b3        or    x3, x1, x2          # x3 = x1 | x2
+  24:   0020c1b3        xor   x3, x1, x2          # x3 = x1 ^ x2
+
+   # Jump (long-distance)
+  28:   03C0006F        j     jump_test           # Jump to `jump_test`
+
+intermediate_code1:
+  2c:   deadb313        li    x9, 0xDEADBEEF      # Dummy filler
+  30:   00000013        nop                       # No operation
+  34:   00000013        nop                       # No operation
+  38:   00000013        nop                       # No operation
+  3c:   12345213        li    x10, 0x12345678     # Filler
+  40:   00000013        nop                       # No operation
+  44:   00000013        nop                       # No operation
+  48:   00000013        nop                       # No operation
+  4c:   cafeb293        li    x11, 0xCAFEBABE     # Filler
+
+intermediate_code2:
+  50:   00000013        nop                       # No operation
+  54:   00000013        nop                       # No operation
+  58:   badc3a93        li    x12, 0xBADC0FFEE    # Filler
+  5c:   00000013        nop                       # No operation
+  60:   00000013        nop                       # No operation
+
+jump_test:
+  64:   03200293        li    x5, 50              # x5 = 50
+
+   # Jump and Link (JAL)
+  68:   030002ef        jal   x6, link_test       # Save PC+4 in x6 and jump to `link_test`
+
+after_link:
+  6c:   402282b3        sub   x5, x5, x2          # x5 = x5 - x2
+
+   # Conditional Branches
+  70:   06400313        li    x7, 100             # x7 = 100
+  74:   03200393        li    x8, 50              # x8 = 50
+  78:   00631363        beq   x7, x8, skip        # Branch if x7 == x8
+  7c:   06300193        li    x3, 99              # x3 = 99
+
+skip:
+  80:   00735363        bne   x7, x8, next        # Branch if x7 != x8
+  84:   02a00193        li    x3, 42              # Skipped
+
+next:
+  88:   03830363        blt   x8, x7, less        # Branch if x8 < x7
+  8c:   07b00193        li    x3, 123             # Skipped
+
+less:
+  90:   03832463        bge   x7, x8, done        # Branch if x7 >= x8
+
+done:
+  94:   0000006f        j     done                # Infinite loop (halt)
+
+link_test:
+  98:   002081b3        add   x5, x1, x2          # x5 = x1 + x2
+  9c:   00028567        jalr  x0, x6              # Return to PC+4 saved in x6
