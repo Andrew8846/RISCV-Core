@@ -69,3 +69,5 @@ done:
 link_test:
   98:   002081b3        add   x5, x1, x2          # x5 = x1 + x2
   9c:   00028567        jalr  x0, x6              # Return to PC+4 saved in x6
+  a0:   00000013        nop
+  a4:   00000013        nop

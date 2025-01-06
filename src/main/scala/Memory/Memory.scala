@@ -35,9 +35,8 @@ class Memory(memoryFile: String) extends Module {
   memory.io.addr := 0.U
   memory.io.wrData := 0.U
 
-//  io.dcacheReadAck := false.B
-//  io.dcacheWriteAck := false.B
-//  io.icacheReadAck := false.B
+  val instReadReq :: instReadyToRead :: Nil = Enum(2)
+  val instReadStateReg = RegInit(instReadReq)
 
 
   // Prioritized memory access
@@ -51,9 +50,6 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := true.B
     dackWriteReg := false.B
     iackReg := false.B
-//    io.dcacheReadAck := true.B
-//    io.dcacheWriteAck := false.B
-//    io.icacheReadAck := false.B
 
   }.elsewhen(io.dataWriteEnable) {
     // Priority 2: Data Write
@@ -66,23 +62,29 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := false.B
     dackWriteReg := true.B
     iackReg := false.B
-//    io.dcacheReadAck := false.B
-//    io.dcacheWriteAck := true.B
-//    io.icacheReadAck := false.B
 
   }.elsewhen(io.instrReadEnable) {
     // Priority 3: Instruction Read
-    memory.io.memWrite := false.B
-    memory.io.addr := io.instructionAddress
-    memory.io.memRead := true.B
-    io.instruction := memory.io.rdData
+
+    io.instruction := 0.U
     io.dataOut := 0.U
-    dackReadReg := false.B
-    dackWriteReg := false.B
-    iackReg := true.B
-//    io.dcacheReadAck := false.B
-//    io.dcacheWriteAck := false.B
-//    io.icacheReadAck := true.B
+    switch(instReadStateReg) {
+      is(instReadReq) {
+        memory.io.memWrite := false.B
+        memory.io.addr := io.instructionAddress
+        memory.io.memRead := true.B
+        instReadStateReg := instReadyToRead
+      }
+      is(instReadyToRead) {
+        io.instruction := memory.io.rdData
+        io.dataOut := 0.U
+        dackReadReg := false.B
+        dackWriteReg := false.B
+        iackReg := true.B
+
+        instReadStateReg := instReadReq
+      }
+    }
 
   }.otherwise {
     // No operations
@@ -93,55 +95,7 @@ class Memory(memoryFile: String) extends Module {
     dackReadReg := false.B
     dackWriteReg := false.B
     iackReg := false.B
-//    io.dcacheReadAck := false.B
-//    io.dcacheWriteAck := false.B
-//    io.icacheReadAck := false.B
   }
-
-
-//  when(io.instrReadEnable && io.dataReadEnable) {
-//    // Both instruction fetch and data read are requested
-//    instPriority := ~instPriority
-//  }
-
-//  val isInstCycle = io.instrReadEnable && (instPriority || !io.dataReadEnable)
-//  val isDataReadCycle = io.dataReadEnable && (!instPriority || !io.instrReadEnable)
-
-
-  // Write buffer
-  // to address problem : instrReadEnable and dataWriteEnable. instrReadEnable - priority
-  // todo make this buffer sized 3 (not needed)
-  // todo priorities : 1 data read, 2 data write, 3 inst read.
-  // todo i need buffers for instuction reads. (not needed)
-
-  // todo what happens when you have cache miss in icache? if memory is bussy doing dataread/write, then you just wait longer to get answer for your instructuion.
-
-//  when(io.dataWriteEnable && !isInstCycle) {
-//    // no conflict, write data in memory directly
-//    memory.io.memWrite := true.B
-//    memory.io.wrData := io.dataIn
-//    memory.io.addr := io.dataAddress
-//    memBusyReg := true.B
-//  }.otherwise {
-//    memory.io.memWrite := false.B
-//    memBusyReg := false.B // maybe extra
-//  }
-//
-//  memory.io.addr := Mux(isInstCycle, io.instructionAddress, io.dataAddress) // question: this will overwrite above when else statement?
-//  memory.io.memRead := isInstCycle || isDataReadCycle
-//
-//  io.instruction := 0.U
-//  io.dataOut := 0.U
-//
-//  when(isInstCycle) {
-//    io.instruction := memory.io.rdData
-//    memBusyReg := true.B
-//  }
-//
-//  when(isDataReadCycle) {
-//    io.dataOut := memory.io.rdData
-//    memBusyReg := true.B
-//  }
 
   io.dcacheReadAck := dackReadReg
   io.dcacheWriteAck := dackWriteReg

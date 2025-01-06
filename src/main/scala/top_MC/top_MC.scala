@@ -67,20 +67,9 @@ class top_MC(BinaryFile: String) extends Module {
   testHarness.memUpdates                := MEM.testHarness.testUpdates
   testHarness.currentPC                 := IF.testHarness.PC
 
-// when(!preloadComplete) {
-//
-//  when (CachesAndMemory.io.i_valid) { // Ensure a valid instruction signal if available
-//   //   IF.io.instruction_in := CachesAndMemory.io.instr_out.asTypeOf(new Instruction)
-//   preloadComplete := true.B // Indicate preload is complete
-//  }
-//
-// }
-
 
 
   // Fetch Stage
-//  CachesAndMemory.io.instr_addr := IF.io.instr_addr_out
-//  CachesAndMemory.io.read_en_instr := true.B
   IF.io.instruction_in     := CachesAndMemory.io.instr_out.asTypeOf(new Instruction)
   IF.io.validInstruction   := CachesAndMemory.io.i_valid
   IF.io.branchTaken        := EX.io.branchTaken
@@ -99,6 +88,7 @@ class top_MC(BinaryFile: String) extends Module {
 
   //Signals to IFBarrier
   IFBarrier.inCurrentPC        := IF.io.PC
+  IFBarrier.validInstructForPcUpdate := CachesAndMemory.io.i_valid
   IFBarrier.inInstruction      := IF.io.instruction
   IFBarrier.stall              := HzdUnit.io.stall | HzdUnit.io.stall_membusy  // Stall Decode -> IFBarrier_en=0
   IFBarrier.flush              := HzdUnit.io.flushD
@@ -179,8 +169,6 @@ class top_MC(BinaryFile: String) extends Module {
   CachesAndMemory.io.address  := MEM.io.dataAddress_o
   CachesAndMemory.io.write_en := MEM.io.writeEnable_o
   CachesAndMemory.io.read_en_data := MEM.io.readEnable_o
-
- // todo how MEM stage stalling keeps old values not overwritten
 
 
   //MEMBarrier

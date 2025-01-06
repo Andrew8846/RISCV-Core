@@ -26,6 +26,7 @@ class IFpipe extends Module
       val inBTBHit            = Input(Bool())
       val inBTBPrediction     = Input(Bool())
       val inBTBTargetPredict  = Input(UInt(32.W))
+      val validInstructForPcUpdate = Input(Bool())
       val outBTBHit           = Output(Bool())
       val outBTBPrediction    = Output(Bool())
       val outBTBTargetPredict = Output(UInt(32.W))
@@ -34,7 +35,8 @@ class IFpipe extends Module
     }
   )
 
-  val currentPCReg   = RegEnable(io.inCurrentPC, 0.U, !io.stall)
+  val currentPCReg   = RegInit(UInt(32.W), 0.U)
+//  val currentPCReg   = RegEnable(io.inCurrentPC, 0.U, !io.stall)
   val instructionReg = RegEnable(io.inInstruction, Inst.NOP, !io.stall)
 
 
@@ -46,6 +48,12 @@ class IFpipe extends Module
   val btbHitReg        = RegInit(false.B)
   val btbPredictionReg = RegInit(false.B)
   val btbTargetPredict = RegInit(0.U(32.W))
+
+  when (io.validInstructForPcUpdate && !io.stall) {
+    currentPCReg := io.inCurrentPC
+  }.otherwise {
+    currentPCReg := currentPCReg
+  }
 
   btbHitReg        := io.inBTBHit
   btbPredictionReg := io.inBTBPrediction

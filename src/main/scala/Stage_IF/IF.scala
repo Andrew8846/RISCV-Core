@@ -53,8 +53,6 @@ class IF extends Module
     val instr_addr_out     = Output(UInt(32.W))
   })
 
-  // TODO change name for "InstructionMemory"
-//  val InstructionMemory = Module(new CachesAndMemory(BinaryFile))
   val BTB               = Module(new BTB_direct)
   val nextPC            = WireInit(UInt(), 0.U)
   val PC                = RegInit(UInt(32.W), 0.U)
@@ -65,26 +63,9 @@ class IF extends Module
   val isBranch          = RegInit(Bool(), false.B)
   val stall2            = Wire(Bool())
   stall2   := false.B
-//  val placeholderInstruction = Inst.PLACEHOLDER // random instruction 1 in this case (can be discussed)
-
-  // i commented those two lines and I question even if they are necessary TODO
-//  InstructionMemory.testHarness.setupSignals := testHarness.InstructionMemorySetup
   testHarness.PC := 0.U
-  // Check if we have received the real instruction or just the placeholder
-//  val isPlaceholder = WireInit(false.B)
-//  isPlaceholder := false.B
-//  when (io.instruction_in.asUInt === placeholderInstruction.asUInt) {
-//    isPlaceholder := true.B
-//    PCplus4 := PC
-//  }.otherwise {
-//    PCplus4 := PC + 4.U
-//  }
 
-//  instruction := Mux(isPlaceholder, Inst.NOP, io.instruction_in)
   instruction := io.instruction_in
-//  instruction := InstructionMemory.io.instr_out.asTypeOf(new Instruction)
-//  io.fetchBusy := InstructionMemory.io.i_busy //InstructionMemory.io.busy
-//  instruction := InstructionMemory.io.instruction.asTypeOf(new Instruction)
 
   PCplus4 := PC + 4.U
 
@@ -138,15 +119,9 @@ class IF extends Module
       PC := PC
     }
 
-    //Fetch prev instruction -- Stalling the part of IF Barrier that holds the instruction
-    //InstructionMemory.io.instructionAddress := io.IFBarrierPC
-//    InstructionMemory.io.instr_addr := io.IFBarrierPC
     io.instr_addr_out := io.IFBarrierPC //io.IFBarrierPC
-//    io.instr_addr_out := PC
   }.otherwise{
     //Fetch instruction
-//    InstructionMemory.io.instructionAddress := PC
-//    InstructionMemory.io.instr_addr := PC // todo i only give this one input to my cachesAndMemory class. should i give some zero values for other inputs
     io.instr_addr_out := PC // PC
     // PC register gets nextPC
     PC := nextPC
@@ -158,26 +133,6 @@ class IF extends Module
   }.otherwise {
     isBranch := false.B
   }
-  //Mux for controlling which address to go to next
-//  when(io.branchMispredicted){  // Case of branch mispredicted, we realize that in EX stage
-//    when(io.branchTaken){  // Branch Behavior is Taken, but Predicted Not-Taken
-//      nextPC := io.branchAddr
-//    }
-//    .otherwise{
-//      nextPC := io.PCplus4ExStage
-//    }
-//  }
-//  .elsewhen(BTB.io.btbHit){  // BTB hits -> Choose nextPC as per the prediction
-//    when(BTB.io.prediction){  // Predict taken
-//      nextPC := BTB.io.targetAdr
-//    }
-//    .otherwise{ // Predict not taken
-//      nextPC := PCplus4
-//    }
-//  }
-//  .otherwise{ // Normal instruction OR assume not taken (BTB miss)
-//    nextPC := PCplus4
-//  }
   
   // Send PC to the rest of the pipeline
   io.PC := PC // PC
